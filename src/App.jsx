@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import './App.css'
 import { createRoot } from 'react-dom/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
