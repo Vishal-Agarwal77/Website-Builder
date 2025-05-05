@@ -1,36 +1,53 @@
 import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faForward, faCircleChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
-function TypeOfContent({ item }) {
+function TypeOfContent({ item, setdraggedItem }) {
   if (item.type == 'text') {
-    return <p style={item.style}>{item?.content}</p>
+    return <p style={item.style} onClick={(e) => {
+      e.stopPropagation()
+      setdraggedItem({ ...item })
+    }}
+    >{item?.content}</p>
   }
   else if (item.type == 'button') {
-    return <button style={item.style}>{item?.content}</button>
+    return <button style={item.style} onClick={(e) => {
+      e.stopPropagation()
+      setdraggedItem({ ...item })
+    }}>{item?.content}</button>
   }
   else if (item.type === 'image') {
-    return <img src={item?.src} style={item?.style} />
+    return <img src={item?.src} onClick={(e) => {
+      e.stopPropagation()
+      setdraggedItem({ ...item })
+    }} style={item?.style} />
   }
-  else if (item.type === 'shape') {
-    return <div style={item?.style}></div>
-  }
+  // else if (item.type === 'shape') {
+  //   return <div style={item?.style}></div>
+  // }
 }
 
 
-function Recursion({ element = [], handleMoveStart, handleMoveEnd }) {
+function Recursion({ element = [], handleMoveStart, setdraggedItem }) {
+  // console.log(element)
   return element?.map((item, index) => (
     <div
       key={index}
       onDrag={() => handleMoveStart ? handleMoveStart(item) : ''}
-      // onDragOver={(e) => e.preventDefault()}
-      // onDrop={handleMoveEnd}
+      onClick={(e) => {
+        if (item.type === 'shape') {
+          e.stopPropagation()
+          setdraggedItem({ ...item })
+        }
+      }
+      }
+      style={item.type === 'shape' ? item?.style : null}
       draggable={handleMoveStart ? true : false}
     >
       {item &&
-        <TypeOfContent item={item} />
+        <TypeOfContent item={item} setdraggedItem={setdraggedItem} />
       }
       {/* <p style={item.style}>{item.content}</p> */}
       {item?.items && item?.items.length > 0 &&
@@ -40,7 +57,35 @@ function Recursion({ element = [], handleMoveStart, handleMoveEnd }) {
   )
 }
 
-function HelperFunction({ type, draggedItem, changeValue }) {
+function ChildElement({ arr, setdraggedItem, level }) {
+  console.log("Child Element is running")
+  console.log(arr)
+  // return null
+  return arr?.map((item) => {
+    return (
+      <>
+        <div
+          key={item}
+          onClick={() => setdraggedItem({ ...item })}
+          className='border bg-gray-200 flex gap-x-1 '
+          style={{
+            marginLeft: `${level * 10}px`,
+            width: `calc(100%-(${level * 10}px))`
+          }}
+        >
+          <span>{item?.type ? item.type : ''}</span>
+          <span><FontAwesomeIcon icon={faCircleChevronRight} /></span>
+          <span>{item?.content ? item.content : ''}</span>
+        </div>
+        {item.items &&
+          <ChildElement arr={item?.items} setdraggedItem={setdraggedItem} level={level + 1} />}
+      </>
+    )
+  }
+  )
+}
+
+function HelperFunction({ type, draggedItem, changeValue, setAddChildStatus, AddChildStatus, setdraggedItem }) {
   switch (type) {
     case 'image':
       return (
@@ -130,7 +175,7 @@ function HelperFunction({ type, draggedItem, changeValue }) {
                 className='outline-none w-[50px] bg-gray-300 ' value={draggedItem ? Number(draggedItem?.style?.paddingLeft.slice(0, -1)) : 0}
                 onChange={(e) => {
                   changeValue('paddingLeft', e)
-                  changeValue('paddingRight', e)
+                  // changeValue('paddingRight', e)
                 }}
               />
             </div>
@@ -140,7 +185,7 @@ function HelperFunction({ type, draggedItem, changeValue }) {
                 className='outline-none w-[50px] bg-gray-300 ' value={draggedItem ? Number(draggedItem?.style?.paddingTop.slice(0, -1)) : 0}
                 onChange={(e) => {
                   changeValue('paddingTop', e)
-                  changeValue('paddingBottom', e)
+                  // changeValue('paddingBottom', e)
                 }}
               />
             </div>
@@ -200,15 +245,35 @@ function HelperFunction({ type, draggedItem, changeValue }) {
           <label htmlFor='borderRadius'>Border Radius : </label>
           <input type='number' min={0} id='borderRadius'
             className='outline-none w-[50px] bg-gray-300'
-            value={draggedItem ? parseFloat(draggedItem?.style?.borderRadius) : 0}
+            value={draggedItem?.style?.borderRadius ? parseFloat(draggedItem?.style?.borderRadius) : 0}
             onChange={(e) => changeValue('borderRadius', e)}
           />
         </div>
-        </>)
+        <div className='flex items-center'>
+          <label htmlFor='child'>Add Child</label>
+          <input
+            type='checkbox'
+            checked={AddChildStatus}
+            onChange={(e) => setAddChildStatus(e.target.checked)}
+          />
+        </div>
+        <div className='flex flex-col items-start'>
+          <p>Children</p>
+          <div className='flex flex-col gap-y-2 items-start w-[100%]'>
+            {draggedItem.items &&
+              // draggedItem?.items.map((item) => {
+              //   return (<div className='w-full flex flex-col gap-y-1'
+              //   key={item}>
+              <ChildElement arr={draggedItem?.items} setdraggedItem={setdraggedItem} level={1} />
+              // </div>)
+            }
+          </div>
+        </div >
+      </>)
     case 'text':
       return (<><div className='flex items-center'>
         <label htmlFor='content'>Content : </label>
-        <input type='text' id='content' className='outline-none border border-gray-600' value={draggedItem?.content ? draggedItem?.content : ''} onChange={(e) => changeValue('content', e)} />
+        <input type='text' id='content' className='outline-none border border-gray-600' value={draggedItem.content ? draggedItem?.content : ''} onChange={(e) => changeValue('content', e)} />
       </div>
         <div className='flex items-center'>
           <label htmlFor='fontColor'>Color : </label>
@@ -257,6 +322,7 @@ let propertiesOfElement = {
       'position': 'absolute',
       'left': '0%',
       'top': '0%',
+      'margin': '0px'
     },
     items: []
   },
@@ -276,6 +342,7 @@ let propertiesOfElement = {
       'paddingBottom': '1%',
       'borderRadius': '0px',
       'cursor': 'pointer',
+      'margin': '0px'
     }
   },
   'image': {
@@ -292,10 +359,12 @@ let propertiesOfElement = {
       'objectFit': 'cover',
       'cursor': 'pointer',
       'boxShadow': 'none',
+      'margin': '0px'
     }
   },
   'rectangle': {
     type: 'shape',
+    active_child: false,
     style: {
       'width': '20%',
       'height': '20%',
@@ -303,56 +372,37 @@ let propertiesOfElement = {
       'position': 'absolute',
       'left': '0%',
       'top': '0%',
-    }
+      'margin': '0px'
+    },
+    items: []
   },
   'circle': {
     type: 'shape',
+    active_child: false,
     style: {
-      'width': '20%',
-      'height': '20%',
+      'width': '20vw',
+      'height': '20vw',
       'backgroundColor': '#000000',
       'borderRadius': '100%',
       'position': 'absolute',
       'left': '0%',
       'top': '0%',
-    }
+      'margin': '0px'
+    },
+    items: []
   }
 }
 
 function App() {
-  // const [showPreview, setshowPreview] = useState(false)
   const [showShapes, setshowShapes] = useState(false)
   const [Id, setId] = useState(0)
   const CanvasRef = useRef(null)
   const [draggedItem, setdraggedItem] = useState(null)
-  // const [droppedItem, setdroppedItem] = useState()
-  // const [TextBox, setTextBox] = useState({
-  //   id: Id,
-  //   type: 'text',
-  //   content: 'Sample',
-  //   style: {
-  //     'color': '#FF0000',
-  //     'fontSize': '2.3vw',
-  //     'position': 'absolute',
-  //     'left': '0%',
-  //     'top': '0%'
-  //   },
-  //   items: [{
-  //     id: Id + 1,
-  //     type: 'text',
-  //     content: 'Test',
-  //     style: {
-  //       'color': '#FFFF00',
-  //       'fontSize': '1.2vw',
-  //       'position': 'absolute',
-  //       'left': '5%',
-  //       'top': '5%'
-
-  //     }
-  //   }]
-  // })
+  const [previousDraggedItem, setpreviousDraggedItem] = useState(null)
   const [Element, setElement] = useState([])
+  const [AddChildStatus, setAddChildStatus] = useState(false)
   let handleDragStart = (type, e) => {
+    setpreviousDraggedItem({ ...draggedItem })
     if (type === 'Text') {
       setdraggedItem({
         id: Id,
@@ -397,9 +447,38 @@ function App() {
 
     let found = arr.some(item => item.id === draggedItem.id)
 
-    // console.log(`e.clientX = ` + e.clientX + 'CanvasRect.left = ' + CanvasRect.left + ' CanvasRect.width = ' + CanvasRect.width + '  ' + (e.clientX - CanvasRect.left) / CanvasRect.width)
+    function addChildElement(arr) {
+      console.log('AddChildElemenr')
+      console.log('Previous Element = ' + previousDraggedItem)
+      console.log({ ...previousDraggedItem })
+      return arr.map((item) => {
+        if (item.id === previousDraggedItem.id) {
+          item.items = [...item.items, { ...draggedItem }]
+          console.log(item)
+          return {
+            ...item
+          }
+        }
+        if (item.items && item.items.length > 0) {
+          return {
+            ...item,
+            items: addChildElement(item.items)
+          }
+        }
+        return item
+      })
+    }
+    if (AddChildStatus) {
+      const newArr = addChildElement(Element)
+      setId(Id + 1)
+      console.log(newArr)
+      setElement(newArr)
+      setAddChildStatus(false)
+      return
+    }
 
     if (!found) {
+      console.log("Found")
       if (draggedItem.type === 'image') {
         arr.push(
           { ...draggedItem }
@@ -407,9 +486,10 @@ function App() {
       }
       else {
         arr.push({
-          id: Id,
+          id: draggedItem?.id,
           type: draggedItem?.type,
           content: draggedItem?.content,
+          active_child: true,
           style: {
             ...draggedItem.style,
             left: `${(e.clientX - CanvasRect.left) * 100 / CanvasRect.width}%`,
@@ -422,8 +502,10 @@ function App() {
       setElement(arr)
     }
     else {
+      console.log('move')
       setElement((prevElement) =>
         prevElement.map((el, index) => {
+          el.active_child = false
           if (el.id === draggedItem.id) {
             return {
               ...el,
@@ -449,7 +531,6 @@ function App() {
       ...item,
       style: {
         ...item.style,
-        border: '2px solid red',
       }
     })
   }
@@ -464,79 +545,159 @@ function App() {
 
     let arr = Element
 
-    // let arr=Element.forEach((item)=>{
-    //   if(item.id===draggedItem.id){
-    //     item.left=e.clientX - CanvasRect.left
-    //     item.top=e.clientY - CanvasRect.top
-    //   }
-    // })
-    // console.log(arr)
     setElement(arr)
   }
   let changeValue = (type, e) => {
-    // console.log(draggedItem)
-    let temp;
-    setElement((prevElement) =>
-      prevElement.map((item) => {
-        if (item.id === draggedItem.id) {
-          let temp
+    let item
+    // console.log('Element = ' + { ...draggedItem })
+    // console.log({ ...draggedItem })
+    function replaceValue(array) {
+      return array?.map((el) => {
+        if (el.id === draggedItem.id) {
+          console.log(el)
+          console.log(type)
           if (type === 'content' || type === 'src') {
-            temp = {
-              ...item,
-              [type]: e.target.value
+            // console.log(el)
+            // console.log("new Value = " + e.target.value)
+            item = {
+              ...el,
+              [type]: `${e.target.value}`
             }
+            console.log('item = ')
+            console.log(item)
+            setdraggedItem({ ...item })
+            return { ...item }
           }
           else if (type === 'paddingLeft' || type === 'paddingRight' || type === 'paddingTop' || type === 'paddingBottom' || type === 'width' || type === 'height' || type === 'left' || type === 'top') {
-            temp = {
-              ...item,
-              style: {
-                ...item.style,
-                [type]: `${e.target.value}%`
+            if (draggedItem.type === 'CircleShape' && (type === 'wdith' || type === 'height')) {
+              item = {
+                ...el,
+                [type]: `${e.target.value}vw`
+              }
+              setdraggedItem({ ...item })
+              return { ...item }
+
+            }
+            else if(draggedItem.type==='button' && (type==='paddingLeft' || type==='paddingTop')){
+              if(type==='paddingLeft'){
+                item={
+                  ...el,
+                  style:{
+                    ...el.style,
+                    'paddingLeft':`${e.target.value}%`,
+                    'paddingRight':`${e.target.value}%`
+                  }
+                }
+                console.log(item)
+                setdraggedItem({...item})
+                return item
+              }
+              else{
+                item={
+                  ...el,
+                  style:{
+                    ...el.style,
+                    'paddingTop':`${e.target.value}%`,
+                    'paddingBottom':`${e.target.value}%`
+                  }
+                }
+                console.log(item)
+                setdraggedItem({...item})
+                return item
               }
             }
-            // console.log(item)
+            else {
+              item = {
+                ...el,
+                style: {
+                  ...el.style,
+                  [type]: `${e.target.value}%`
+                }
+              }
+              setdraggedItem({ ...item })
+              return { ...item }
+
+            }
           }
           else if (type === 'borderRadius') {
-            temp = {
-              ...item,
+            item = {
+              ...el,
               style: {
-                ...item.style,
+                ...el.style,
                 [type]: `${e.target.value}px`
                 // [type]:'10px'
               }
             }
-            // console.log(typeof temp.style.borderRadius,temp.style.borderRadius)
+            setdraggedItem({ ...item })
+            return { ...item }
+            // return el
           }
           else if (type === 'fontSize') {
-            temp = {
-              ...item,
+            item = {
+              ...el,
               style: {
-                ...item.style,
+                ...el.style,
                 [type]: `${e.target.value}vw`
               }
             }
-            // console.log(typeof temp.style.fontSize, temp.style.fontSize)
+            setdraggedItem({ ...item })
+            return { ...item }
           }
           else {
-            temp = {
-              ...item,
+            item = {
+              ...el,
               style: {
-                ...item.style,
+                ...el.style,
                 [type]: e.target.value
               }
             }
+            setdraggedItem({ ...item })
+            return { ...item }
           }
-          setdraggedItem({ ...temp })
-          return temp
         }
-        else {
-          return { ...item }
+
+        if (el.items && el.items.length > 0) {
+          return {
+            ...el,
+            items: replaceValue(el.items)
+          }
         }
-      }))
-    console.log(temp)
+        return el;
+      })
+    }
+    const updatedArray = replaceValue(Element)
+    // console.log(updatedArray)
+    setElement(updatedArray)
+    const updatedItem = findItemByID(updatedArray, draggedItem.id)
+    if (updatedItem) {
+      setdraggedItem(updatedItem)
+    }
+    function findItemByID(arr, id) {
+      for (let el of arr) {
+        if (el.id === id) {
+          return el
+        }
+        if (el.items && el.items.length > 0) {
+          const found = findItemByID(el.items, id)
+          if (found) return found
+        }
+        return null
+      }
+    }
+  }
+  let handleRemove = () => {
+    if (!draggedItem) {
+      return
+    }
+
+    setElement((prevElement) =>
+      prevElement.filter((item) =>
+        item.id !== draggedItem.id
+      )
+    )
   }
   let handlePreview = () => {
-    
+
     const newTab = window.open('', '_blank')
     newTab.document.write(
       `<div id="preview-root" style={{height:100%;position: relative}}></div>`
@@ -564,13 +725,20 @@ function App() {
           >
 
             {Element &&
-              <Recursion element={Element} handleMoveStart={handleMoveStart} handleMoveEnd={handleMoveEnd} />
+              <Recursion element={Element} handleMoveStart={handleMoveStart} setdraggedItem={setdraggedItem} />
             }
           </div>
           {/* </div> */}
         </div>
         <div className='w-[30%] border flex flex-col items-center'>
           <div className='mt-12 fit flex flex-col gap-y-4 w-full px-10'>
+            <p
+              className='bg-red-600 text-white py-1 px-2 cursor-pointer'
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleRemove}
+            >
+              Remove
+            </p>
             <p
               onClick={handlePreview}
               className='bg-black text-white py-1 px-2 cursor-pointer'
@@ -632,7 +800,7 @@ function App() {
           </div>
           {draggedItem &&
             <div className='w-fit h-fit flex flex-col gap-y-3 border mt-6 bg-white py-4 px-2'>
-              <HelperFunction type={draggedItem?.type} draggedItem={draggedItem} changeValue={changeValue} />
+              <HelperFunction type={draggedItem?.type} draggedItem={draggedItem} changeValue={changeValue} setAddChildStatus={setAddChildStatus} AddChildStatus={AddChildStatus} setdraggedItem={setdraggedItem} />
             </div>
           }
         </div>
