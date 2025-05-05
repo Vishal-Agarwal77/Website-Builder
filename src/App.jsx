@@ -31,7 +31,6 @@ function TypeOfContent({ item, setdraggedItem }) {
 
 
 function Recursion({ element = [], handleMoveStart, setdraggedItem }) {
-  // console.log(element)
   return element?.map((item, index) => (
     <div
       key={index}
@@ -58,9 +57,6 @@ function Recursion({ element = [], handleMoveStart, setdraggedItem }) {
 }
 
 function ChildElement({ arr, setdraggedItem, level }) {
-  console.log("Child Element is running")
-  console.log(arr)
-  // return null
   return arr?.map((item) => {
     return (
       <>
@@ -438,7 +434,7 @@ function App() {
     if (!draggedItem) {
       return
     }
-    console.log(draggedItem)
+    
     e.preventDefault()
     let arr = Element
 
@@ -448,13 +444,9 @@ function App() {
     let found = arr.some(item => item.id === draggedItem.id)
 
     function addChildElement(arr) {
-      console.log('AddChildElemenr')
-      console.log('Previous Element = ' + previousDraggedItem)
-      console.log({ ...previousDraggedItem })
       return arr.map((item) => {
         if (item.id === previousDraggedItem.id) {
           item.items = [...item.items, { ...draggedItem }]
-          console.log(item)
           return {
             ...item
           }
@@ -471,14 +463,12 @@ function App() {
     if (AddChildStatus) {
       const newArr = addChildElement(Element)
       setId(Id + 1)
-      console.log(newArr)
       setElement(newArr)
       setAddChildStatus(false)
       return
     }
 
     if (!found) {
-      console.log("Found")
       if (draggedItem.type === 'image') {
         arr.push(
           { ...draggedItem }
@@ -502,7 +492,6 @@ function App() {
       setElement(arr)
     }
     else {
-      console.log('move')
       setElement((prevElement) =>
         prevElement.map((el, index) => {
           el.active_child = false
@@ -526,7 +515,6 @@ function App() {
 
   }
   let handleMoveStart = (item) => {
-    // console.log(item)
     setdraggedItem({
       ...item,
       style: {
@@ -549,22 +537,14 @@ function App() {
   }
   let changeValue = (type, e) => {
     let item
-    // console.log('Element = ' + { ...draggedItem })
-    // console.log({ ...draggedItem })
     function replaceValue(array) {
       return array?.map((el) => {
         if (el.id === draggedItem.id) {
-          console.log(el)
-          console.log(type)
           if (type === 'content' || type === 'src') {
-            // console.log(el)
-            // console.log("new Value = " + e.target.value)
             item = {
               ...el,
               [type]: `${e.target.value}`
             }
-            console.log('item = ')
-            console.log(item)
             setdraggedItem({ ...item })
             return { ...item }
           }
@@ -588,7 +568,6 @@ function App() {
                     'paddingRight':`${e.target.value}%`
                   }
                 }
-                console.log(item)
                 setdraggedItem({...item})
                 return item
               }
@@ -601,7 +580,6 @@ function App() {
                     'paddingBottom':`${e.target.value}%`
                   }
                 }
-                console.log(item)
                 setdraggedItem({...item})
                 return item
               }
@@ -666,7 +644,6 @@ function App() {
       })
     }
     const updatedArray = replaceValue(Element)
-    // console.log(updatedArray)
     setElement(updatedArray)
     const updatedItem = findItemByID(updatedArray, draggedItem.id)
     if (updatedItem) {
